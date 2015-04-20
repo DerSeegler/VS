@@ -12,31 +12,38 @@ package examples;
 
 import java.io.*;
 import java.net.*;
+import java.util.Random;
 
 public class TCPServer {
 
-  static String line;
-  static BufferedReader fromClient;
-  static DataOutputStream toClient;
+  String line;
+  BufferedReader fromClient;
+  DataOutputStream toClient;
+  static Random rand = new Random();
 
   public static void main(String[] args) throws Exception {
-    ServerSocket contactSocket = new ServerSocket(9999);
-    while (true) {                            // Handle connection request
-      Socket client = contactSocket.accept(); // creat communication socket
-      System.out.println("Connection with: "+client.getRemoteSocketAddress());
-      handleRequests(client);
-    }
+    TCPServer server = new TCPServer();
+    server.EstablishTCP(9999);
   }
 
-  static void handleRequests(Socket s) {
+  public void EstablishTCP(int socket)  throws Exception {
+   ServerSocket contactSocket = new ServerSocket(socket);
+      while (true) {                            // Handle connection request
+        Socket client = contactSocket.accept(); // creat communication socket
+        System.out.println("Connection with: "+client.getRemoteSocketAddress());
+        this.handleRequests(client);
+      }
+  }
+
+  public void handleRequests(Socket s) {
     try {
       fromClient = new BufferedReader(        // Datastream FROM Client
         new InputStreamReader(s.getInputStream()));
       toClient = new DataOutputStream(
         s.getOutputStream());                 // Datastream TO Client
       while (receiveRequest()) {              // As long as connection exists
-        sendResponse();
       }
+      sendResponse();
       fromClient.close();
       toClient.close();
       s.close();
@@ -46,16 +53,51 @@ public class TCPServer {
     }
   }
 
-  static boolean receiveRequest() throws IOException {
+  public boolean receiveRequest() throws IOException {
     boolean holdTheLine = true;
     System.out.println("Received: " + (line = fromClient.readLine()));
-    if (line.equals(".")) {                         // End of session?
+    if (line.equals("")) {                         // End of session?
       holdTheLine = false;
     }
     return holdTheLine;
   }
 
-  static void sendResponse() throws IOException {
-    toClient.writeBytes(line.toUpperCase() + '\n');  // Send answer
+  public void sendResponse() throws IOException {
+    //toClient.writeBytes(line.toUpperCase() + '\n');  // Send answer
+    toClient.writeBytes("HTTP/1.x 200 OK\nContent-Type: text/html; charset=utf-8\n\n");
+    toClient.writeBytes("<html>\n<header>\n<title>Testseite</title>\n</header>\n<body>\n");
+    toClient.writeBytes("Wind: " + getValueWind() + "<br />");
+    toClient.writeBytes("Strom: " + getValuePower() + "<br />");
+    toClient.writeBytes("</body>\n</html>\n");
+  }
+  
+  public static int getValueWind() {
+      int value = randGaussian(50, 18);
+      if(value > 140) {
+          value = 140;
+      }
+      
+      if(value < 0) {
+          value = 0;
+      }
+      
+      return value;
+  }
+  
+  public static int getValuePower() {
+      int value = randGaussian(3, 1.5);
+      if(value > 10) {
+          value = 10;
+      }
+      
+      if(value < 0) {
+          value = 0;
+      }
+      
+      return value;
+  }
+  
+  public static int randGaussian(double average, double deviation) {
+    return (int)(rand.nextGaussian() * deviation + average);
   }
 }
