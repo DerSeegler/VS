@@ -1,4 +1,4 @@
-package examples;
+package vs;
 
 /*
  * 22. 10. 10
